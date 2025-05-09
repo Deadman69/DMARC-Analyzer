@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>DMARC Guardian Dashboard</title>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<script src="https://cdn.tailwindcss.com"></script>
+		<script defer src="app.js"></script>
+		<script defer src="language.js"></script>
+	</head>
+	<body class="bg-gray-100 text-gray-900">
+		<div class="container mx-auto p-8">
+            <div class="flex justify-end mb-4">
+				<select id="langSelector" class="p-2 border rounded">
+					<option value="en">🇬🇧 English</option>
+					<option value="fr">🇫🇷 Français</option>
+					<option value="it">🇮🇹 Italiano</option>
+				</select>
+			</div>
+
+			<h1 class="text-4xl font-bold mb-8 text-center" data-i18n="dashboard_title"></h1>
+			<!-- Résumé Statistiques -->
+			<div class="grid grid-cols-4 gap-6 mb-8 text-center">
+				<div class="bg-white shadow p-6 rounded">
+					<div class="text-2xl font-bold" id="passCount">
+						0
+					</div>
+					<div class="text-gray-600" data-i18n="mails_passed"></div>
+				</div>
+                <div class="bg-white shadow p-6 rounded">
+					<div class="text-2xl font-bold" id="passSPFDKIMErrorCount">
+						0
+					</div>
+					<div class="text-gray-600" data-i18n="mails_passed_spf_dkim_failed"></div>
+				</div>
+				<div class="bg-white shadow p-6 rounded">
+					<div class="text-2xl font-bold" id="quarantineCount">
+						0
+					</div>
+					<div class="text-gray-600" data-i18n="mails_quarantine"></div>
+				</div>
+				<div class="bg-white shadow p-6 rounded">
+					<div class="text-2xl font-bold" id="rejectCount">
+						0
+					</div>
+					<div class="text-gray-600" data-i18n="mails_rejected"></div>
+				</div>
+			</div>
+			<!-- Graphique -->
+			<div class="bg-white p-4 rounded shadow mb-8 flex justify-center">
+				<canvas id="statusChart" class="w-1/2 h-64"></canvas>
+			</div>
+			<!-- Liste des Rapports -->
+			<div class="bg-white p-6 rounded shadow mb-8">
+				<h2 class="text-2xl font-bold mb-4" data-i18n="last_reports"></h2>
+				<table class="w-full table-auto">
+					<thead class="bg-gray-200">
+						<tr>
+							<th class="px-4 py-2" data-i18n="last_reports_id"></th>
+							<th class="px-4 py-2" data-i18n="last_reports_sender"></th>
+							<th class="px-4 py-2" data-i18n="last_reports_domain"></th>
+							<th class="px-4 py-2" data-i18n="last_reports_start"></th>
+							<th class="px-4 py-2" data-i18n="last_reports_end"></th>
+							<th class="px-4 py-2" data-i18n="last_reports_policy"></th>
+							<th class="px-4 py-2" data-i18n="last_reports_number_emails"></th>
+						</tr>
+					</thead>
+					<tbody id="reportTableBody">
+						<!-- Rempli dynamiquement -->
+					</tbody>
+				</table>
+			</div>
+			<!-- Liste des mails par statut -->
+			<div class="bg-white p-6 rounded shadow">
+				<h2 class="text-2xl font-bold mb-4" data-i18n="email_details"></h2>
+				<div class="bg-white p-6 rounded shadow mb-8">
+                    <h3 class="text-xl font-bold mb-4" data-i18n="advanced_filters"></h3>
+                  
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  
+                      <!-- Disposition -->
+                      <div>
+                        <p class="font-semibold mb-2" data-i18n="advanced_filters_disposition"></p>
+                        <label class="flex items-center space-x-2 mb-1">
+                          <input type="checkbox" data-filter="disposition" value="none" checked>
+                          <span data-i18n="advanced_filters_disposition_none"></span>
+                        </label>
+                        <label class="flex items-center space-x-2 mb-1">
+                          <input type="checkbox" data-filter="disposition" value="quarantine" checked>
+                          <span data-i18n="advanced_filters_disposition_quarantine"></span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                          <input type="checkbox" data-filter="disposition" value="reject" checked>
+                          <span data-i18n="advanced_filters_disposition_reject"></span>
+                        </label>
+                      </div>
+                  
+                      <!-- SPF -->
+                      <div>
+                        <p class="font-semibold mb-2" data-i18n="advanced_filters_spf"></p>
+                        <label class="flex items-center space-x-2 mb-1">
+                          <input type="checkbox" data-filter="spf" value="pass" checked>
+                          <span data-i18n="advanced_filters_spf_pass"></span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                          <input type="checkbox" data-filter="spf" value="fail" checked>
+                          <span data-i18n="advanced_filters_spf_fail"></span>
+                        </label>
+                      </div>
+                  
+                      <!-- DKIM -->
+                      <div>
+                        <p class="font-semibold mb-2" data-i18n="advanced_filters_dkim"></p>
+                        <label class="flex items-center space-x-2 mb-1">
+                          <input type="checkbox" data-filter="dkim" value="pass" checked>
+                          <span data-i18n="advanced_filters_dkim_pass"></span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                          <input type="checkbox" data-filter="dkim" value="fail" checked>
+                          <span data-i18n="advanced_filters_dkim_fail"></span>
+                        </label>
+                      </div>
+                    </div>
+                  
+                    <!-- Presets -->
+                    <div class="flex flex-wrap gap-2 mt-6">
+                      <button id="preset-all" class="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded text-sm" data-i18n="filter_all"></button>
+                      <button id="preset-pass" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-white text-sm" data-i18n="filter_pass"></button>
+                      <button id="preset-pass-partial" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-white text-sm" data-i18n="filter_pass-partial"></button>
+                      <button id="preset-quarantine" class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded text-white text-sm" data-i18n="filter_quarantine"></button>
+                      <button id="preset-reject" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded text-white text-sm" data-i18n="filter_reject"></button>
+                    </div>
+                  </div>                  
+				<table class="w-full table-auto">
+					<thead class="bg-gray-200">
+						<tr>
+							<th class="px-4 py-2">Report</th>
+							<th class="px-4 py-2" data-i18n="ip_source"></th>
+							<th class="px-4 py-2" data-i18n="domain_from"></th>
+							<th class="px-4 py-2" data-i18n="disposition"></th>
+							<th class="px-4 py-2" data-i18n="spf"></th>
+							<th class="px-4 py-2" data-i18n="dkim"></th>
+						</tr>
+					</thead>
+					<tbody id="emailTableBody">
+						<!-- Rempli dynamiquement -->
+					</tbody>
+				</table>
+
+                <div id="pagination" class="flex justify-center space-x-2 mt-4"></div>
+			</div>
+		</div>
+	</body>
+</html>
+

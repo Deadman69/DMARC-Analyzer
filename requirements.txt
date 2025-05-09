@@ -1,0 +1,7 @@
+sqlalchemy
+pymysql
+psycopg2-binary
+pyodbc
+waitress
+flask
+flask-cors

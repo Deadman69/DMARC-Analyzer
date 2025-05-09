@@ -1,0 +1,65 @@
+version: '3.8'
+
+name: dmarc-guardian
+services:
+  web:
+    build: .
+    container_name: dmarc-guardian_web
+    command: ["python", "main_web.py"]
+    depends_on:
+      - mariadb
+    environment:
+      - PYTHONUNBUFFERED=1 # Ensures that the output is not buffered to get the output of Python in real-time
+      - DB_USER=dmarcuser
+      - DB_PASSWORD=dmarcpass
+      - DB_HOST=dmarc-guardian_database
+      - DB_PORT=3306
+      - DB_NAME=dmarcdb
+    volumes:
+      - ./data:/home/appuser/app/data
+      - dmarc_data:/dmarc-guardian/email
+      - ./feeder:/dmarc-guardian/feeder
+    ports:
+      - "62154:8000"
+    restart: unless-stopped
+
+  worker:
+    build: .
+    container_name: dmarc-guardian_worker
+    command: ["python", "main_worker.py"]
+    depends_on:
+      - mariadb
+    environment:
+      - PYTHONUNBUFFERED=1 # Ensures that the output is not buffered to get the output of Python in real-time
+      - IMAP_SERVER=imap.example.com
+      - IMAP_PORT=993
+      - IMAP_EMAIL=email-fraud@example.com
+      - IMAP_PASSWORD=MySecurePassword
+      - IMAP_SSL=true
+      - DB_USER=dmarcuser
+      - DB_PASSWORD=dmarcpass
+      - DB_HOST=dmarc-guardian_database
+      - DB_PORT=3306
+      - DB_NAME=dmarcdb
+    volumes:
+      - dmarc_data:/dmarc-guardian/email
+      - ./feeder:/dmarc-guardian/feeder
+    restart: unless-stopped
+
+  mariadb:
+    image: mariadb:latest
+    container_name: dmarc-guardian_database
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: rootpassword
+      MARIADB_DATABASE: dmarcdb
+      MARIADB_USER: dmarcuser
+      MARIADB_PASSWORD: dmarcpass
+    volumes:
+      - ./init/database:/docker-entrypoint-initdb.d
+      - db_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+volumes:
+  db_data:
+  dmarc_data:
